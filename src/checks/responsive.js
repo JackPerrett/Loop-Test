@@ -15,7 +15,7 @@ export { VIEWPORTS };
  * Checks layout behaviour across common breakpoints: horizontal overflow,
  * viewport meta tag, touch target sizing, and body font size.
  */
-export async function runResponsiveCheck(page, { screenshotDir, slug }) {
+export async function runResponsiveCheck(page, { screenshotDir, slug, captureScreenshots = true }) {
   const issues = [];
   const screenshots = {};
 
@@ -112,9 +112,11 @@ export async function runResponsiveCheck(page, { screenshotDir, slug }) {
       }
     }
 
-    const screenshotPath = `${screenshotDir}/${slug}-${viewport.name}.png`;
-    await page.screenshot({ path: screenshotPath, fullPage: false });
-    screenshots[viewport.name] = screenshotPath;
+    if (captureScreenshots) {
+      const screenshotPath = `${screenshotDir}/${slug}-${viewport.name}.png`;
+      await page.screenshot({ path: screenshotPath, fullPage: false });
+      screenshots[viewport.name] = screenshotPath;
+    }
   }
 
   return { issues, screenshots };

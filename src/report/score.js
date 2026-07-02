@@ -33,4 +33,21 @@ export function buildScorecard(allIssues) {
   return { byCategory, overallScore, overallGrade: grade(overallScore) };
 }
 
+// Averages a set of per-page scorecards into one site-level scorecard, so a
+// site with many pages isn't unfairly penalised just for having more pages.
+export function averageScorecards(scorecards) {
+  const byCategory = {};
+  for (const category of CATEGORIES) {
+    const avg = Math.round(
+      scorecards.reduce((sum, sc) => sum + sc.byCategory[category].score, 0) / scorecards.length
+    );
+    const issueCount = scorecards.reduce((sum, sc) => sum + sc.byCategory[category].issueCount, 0);
+    byCategory[category] = { score: avg, grade: grade(avg), issueCount };
+  }
+  const overallScore = Math.round(
+    scorecards.reduce((sum, sc) => sum + sc.overallScore, 0) / scorecards.length
+  );
+  return { byCategory, overallScore, overallGrade: grade(overallScore) };
+}
+
 export { CATEGORIES, SEVERITY_WEIGHT };

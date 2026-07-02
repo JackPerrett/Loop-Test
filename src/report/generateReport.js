@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { buildScorecard, SEVERITY_WEIGHT } from './score.js';
+import { SEVERITY_WEIGHT } from './score.js';
 
 const SEVERITY_ORDER = Object.keys(SEVERITY_WEIGHT);
 const SEVERITY_ICON = { Critical: '🔴', High: '🟠', Medium: '🟡', Low: '🔵' };
@@ -14,51 +14,21 @@ function relative(reportDir, filePath) {
   return path.relative(reportDir, filePath).split(path.sep).join('/');
 }
 
-export function generateMarkdownReport({ url, generatedAt, meta, metrics, screenshots, allIssues, reportDir }) {
-  const scorecard = buildScorecard(allIssues);
+function renderPageSection(lines, pageReport, reportDir) {
+  const { url, meta, metrics, screenshots, allIssues, scorecard } = pageReport;
   const sorted = sortIssues(allIssues);
-  const topIssues = sorted.filter((i) => i.severity === 'Critical' || i.severity === 'High').slice(0, 8);
 
-  const lines = [];
-  lines.push(`# UX/UI Audit Report`);
+  lines.push(`## ${url}`);
   lines.push('');
-  lines.push(`**Site:** ${url}`);
-  lines.push(`**Generated:** ${generatedAt}`);
-  lines.push(`**Page title:** ${meta.title || '_(none)_'}`);
+  lines.push(`**Page title:** ${meta.title || '_(none)_'} · **Score:** ${scorecard.overallScore}/100 (${scorecard.overallGrade}) · **Issues:** ${allIssues.length}`);
   lines.push('');
-  lines.push(`## Overall Score: ${scorecard.overallScore}/100 (${scorecard.overallGrade})`);
-  lines.push('');
-  lines.push('| Category | Score | Grade | Issues |');
-  lines.push('|---|---|---|---|');
-  for (const [category, data] of Object.entries(scorecard.byCategory)) {
-    lines.push(`| ${category} | ${data.score}/100 | ${data.grade} | ${data.issueCount} |`);
-  }
-  lines.push('');
-
-  if (topIssues.length) {
-    lines.push('## Priority Recommendations');
-    lines.push('');
-    lines.push('The following issues have the greatest impact on usability and should be addressed first:');
-    lines.push('');
-    topIssues.forEach((issue, idx) => {
-      lines.push(`${idx + 1}. ${SEVERITY_ICON[issue.severity]} **[${issue.severity}] ${issue.title}** _(${issue.category})_`);
-    });
-    lines.push('');
-  }
 
   if (screenshots && Object.keys(screenshots).length) {
-    lines.push('## Screenshots');
-    lines.push('');
     for (const [viewport, filePath] of Object.entries(screenshots)) {
-      lines.push(`**${viewport[0].toUpperCase()}${viewport.slice(1)}**`);
-      lines.push('');
       lines.push(`![${viewport} screenshot](${relative(reportDir, filePath)})`);
-      lines.push('');
     }
+    lines.push('');
   }
-
-  lines.push('## Detailed Findings');
-  lines.push('');
 
   const byCategory = {};
   for (const issue of sorted) {
@@ -69,11 +39,6 @@ export function generateMarkdownReport({ url, generatedAt, meta, metrics, screen
   for (const [category, issues] of Object.entries(byCategory)) {
     lines.push(`### ${category}`);
     lines.push('');
-    if (issues.length === 0) {
-      lines.push('_No issues found._');
-      lines.push('');
-      continue;
-    }
     for (const issue of issues) {
       lines.push(`#### ${SEVERITY_ICON[issue.severity]} [${issue.severity}] ${issue.title}`);
       lines.push('');
@@ -85,15 +50,13 @@ export function generateMarkdownReport({ url, generatedAt, meta, metrics, screen
         for (const ref of issue.references) {
           lines.push(`- **Source:** [${ref.title}](${ref.url})`);
         }
-      } else if (issue.helpUrl) {
-        lines.push(`- **More info:** ${issue.helpUrl}`);
       }
       if (issue.sample) lines.push(`- **Example:** \`${issue.sample.replace(/\n/g, ' ')}\``);
       lines.push('');
     }
   }
 
-  lines.push('## Performance Metrics');
+  lines.push('**Performance**');
   lines.push('');
   lines.push('| Metric | Value |');
   lines.push('|---|---|');
@@ -103,11 +66,55 @@ export function generateMarkdownReport({ url, generatedAt, meta, metrics, screen
   lines.push(`| Network requests | ${metrics.requestCount ?? 'N/A'} |`);
   lines.push(`| Transferred weight | ${metrics.transferKb ?? 'N/A'} KB |`);
   lines.push('');
+}
+
+export function generateSiteMarkdownReport({ startUrl, generatedAt, pages, siteScorecard, reportDir }) {
+  const lines = [];
+  lines.push('# UX/UI Site Audit Report');
+  lines.push('');
+  lines.push(`**Start URL:** ${startUrl}`);
+  lines.push(`**Generated:** ${generatedAt}`);
+  lines.push(`**Pages crawled:** ${pages.length}`);
+  lines.push('');
+  lines.push(`## Site Score: ${siteScorecard.overallScore}/100 (${siteScorecard.overallGrade})`);
+  lines.push('');
+  lines.push('| Category | Score | Grade | Issues |');
+  lines.push('|---|---|---|---|');
+  for (const [category, data] of Object.entries(siteScorecard.byCategory)) {
+    lines.push(`| ${category} | ${data.score}/100 | ${data.grade} | ${data.issueCount} |`);
+  }
+  lines.push('');
+
+  lines.push('## Pages');
+  lines.push('');
+  lines.push('| Page | Score | Grade | Issues |');
+  lines.push('|---|---|---|---|');
+  for (const p of pages) {
+    lines.push(`| ${p.url} | ${p.scorecard.overallScore}/100 | ${p.scorecard.overallGrade} | ${p.allIssues.length} |`);
+  }
+  lines.push('');
+
+  const allIssues = pages.flatMap((p) => p.allIssues);
+  const topIssues = sortIssues(allIssues).filter((i) => i.severity === 'Critical' || i.severity === 'High').slice(0, 10);
+  if (topIssues.length) {
+    lines.push('## Priority Recommendations (Site-Wide)');
+    lines.push('');
+    topIssues.forEach((issue, idx) => {
+      lines.push(`${idx + 1}. ${SEVERITY_ICON[issue.severity]} **[${issue.severity}] ${issue.title}** _(${issue.category})_`);
+    });
+    lines.push('');
+  }
+
+  lines.push('## Detailed Findings by Page');
+  lines.push('');
+  for (const pageReport of pages) {
+    renderPageSection(lines, pageReport, reportDir);
+  }
 
   lines.push('---');
   lines.push('');
-  lines.push('_Generated by ux-ui-auditor — an automated check against WCAG 2.1 AA, Nielsen\'s usability heuristics, and common responsive/performance best practices. Automated checks surface a meaningful subset of issues but do not replace manual usability testing with real users._');
+  lines.push('_Generated by ux-ui-auditor — an automated crawl and check against WCAG 2.1 AA, Nielsen\'s usability heuristics, and common responsive/performance best practices. Automated checks surface a meaningful subset of issues but do not replace manual usability testing with real users._');
   lines.push('');
 
-  return { markdown: lines.join('\n'), scorecard };
+  return { markdown: lines.join('\n') };
 }
