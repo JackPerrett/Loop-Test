@@ -1,0 +1,4 @@
+node_modules/
+audit-output/
+audit-output-*/
+*.log
