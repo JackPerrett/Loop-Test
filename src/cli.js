@@ -11,6 +11,8 @@ function parseArgs(argv) {
       args.output = argv[++i];
     } else if (arg === '--timeout' || arg === '-t') {
       args.timeout = Number(argv[++i]);
+    } else if (arg === '--no-pdf') {
+      args.pdf = false;
     } else if (arg === '--help' || arg === '-h') {
       args.help = true;
     } else {
@@ -32,6 +34,7 @@ Usage:
 Options:
   -o, --output <dir>     Output directory for the report and screenshots (default: ./audit-output)
   -t, --timeout <ms>     Page load timeout in milliseconds (default: 30000)
+  --no-pdf               Skip generating the designed PDF report (Markdown is always written)
   -h, --help             Show this help message
 
 Example:
@@ -53,9 +56,10 @@ async function main() {
   console.log(`Auditing ${url} ...`);
 
   try {
-    const { reportPath, scorecard } = await auditWebsite(url, {
+    const { reportPath, pdfPath, scorecard } = await auditWebsite(url, {
       outputDir: args.output,
       timeout: args.timeout,
+      pdf: args.pdf,
     });
 
     console.log('');
@@ -64,7 +68,8 @@ async function main() {
       console.log(`  ${category}: ${data.score}/100 (${data.grade}) — ${data.issueCount} issue(s)`);
     }
     console.log('');
-    console.log(`Report written to: ${reportPath}`);
+    console.log(`Markdown report: ${reportPath}`);
+    if (pdfPath) console.log(`PDF report:      ${pdfPath}`);
   } catch (err) {
     console.error(`Audit failed: ${err.message}`);
     process.exit(1);

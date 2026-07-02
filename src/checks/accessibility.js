@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
+import { REFERENCES } from '../report/references.js';
 
 const require = createRequire(import.meta.url);
 const axeSource = fs.readFileSync(require.resolve('axe-core/axe.min.js'), 'utf-8');
@@ -34,6 +35,10 @@ export async function runAccessibilityCheck(page) {
     description: violation.description,
     norm: `WCAG: ${(violation.tags.filter((t) => /^wcag/.test(t)).join(', ')) || 'best-practice'}`,
     helpUrl: violation.helpUrl,
+    references: [
+      { title: `Deque axe-core rule: ${violation.help}`, url: violation.helpUrl },
+      REFERENCES.wcagQuickRef,
+    ],
     affectedElements: violation.nodes.length,
     sample: violation.nodes[0]?.html?.slice(0, 200),
   }));

@@ -1,3 +1,5 @@
+import { REFERENCES } from '../report/references.js';
+
 const THRESHOLDS = {
   loadMs: { warn: 3000, fail: 5000 }, // Google/industry rule of thumb for perceived-fast pages
   requestCount: { warn: 80, fail: 150 },
@@ -38,6 +40,7 @@ export async function runPerformanceCheck(page) {
         description:
           'Pages that take longer than 5 seconds to load see substantially higher bounce rates. Users perceive delay as unresponsiveness, undermining trust.',
         norm: 'Web performance / Core Web Vitals guidance',
+        references: [REFERENCES.webdevVitals, REFERENCES.nnResponseTimes],
         affectedElements: 1,
       });
     } else if (timing.loadComplete >= THRESHOLDS.loadMs.warn) {
@@ -48,6 +51,7 @@ export async function runPerformanceCheck(page) {
         description:
           'Load time exceeds the ~3 second threshold generally associated with acceptable perceived performance.',
         norm: 'Web performance / Core Web Vitals guidance',
+        references: [REFERENCES.webdevVitals, REFERENCES.nnResponseTimes],
         affectedElements: 1,
       });
     }
@@ -61,6 +65,7 @@ export async function runPerformanceCheck(page) {
       description:
         'A high request count increases the chance of slow or blocking resources and adds latency, especially on constrained mobile connections.',
       norm: 'Web performance best practice',
+      references: [REFERENCES.webdevVitals],
       affectedElements: resources.count,
     });
   }
@@ -73,6 +78,7 @@ export async function runPerformanceCheck(page) {
       description:
         'Heavy pages cost users time and data, particularly on mobile networks, and correlate with higher abandonment.',
       norm: 'Web performance best practice',
+      references: [REFERENCES.webdevVitals],
       affectedElements: 1,
     });
   }

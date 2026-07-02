@@ -1,3 +1,5 @@
+import { REFERENCES } from '../report/references.js';
+
 const VIEWPORTS = [
   { name: 'mobile', width: 375, height: 812 },
   { name: 'tablet', width: 768, height: 1024 },
@@ -29,7 +31,8 @@ export async function runResponsiveCheck(page, { screenshotDir, slug }) {
       title: 'Missing responsive viewport meta tag',
       description:
         'No <meta name="viewport" content="width=device-width, ...​"> tag was found. Without it, mobile browsers render at desktop width and scale down, producing tiny, unreadable text and unpredictable layouts.',
-      norm: 'Responsive Web Design best practice / Google Mobile-Friendly guidelines',
+      norm: 'Responsive Web Design best practice',
+      references: [REFERENCES.mdnViewportMeta, REFERENCES.webdevResponsive],
       affectedElements: 1,
     });
   }
@@ -51,6 +54,7 @@ export async function runResponsiveCheck(page, { screenshotDir, slug }) {
         description:
           'The page content is wider than the viewport, forcing horizontal scrolling. This usually indicates a fixed-width element, unconstrained image, or missing max-width: 100% rule.',
         norm: 'Responsive Web Design best practice',
+        references: [REFERENCES.webdevResponsive],
         affectedElements: 1,
       });
     }
@@ -77,7 +81,8 @@ export async function runResponsiveCheck(page, { screenshotDir, slug }) {
           title: `${smallTargets} interactive element(s) smaller than the ${MIN_TOUCH_TARGET}px recommended touch target`,
           description:
             'Buttons, links, and form controls smaller than 44x44 CSS pixels are hard to tap accurately on touchscreens, a common source of mis-taps and frustration (Fitts\'s Law).',
-          norm: 'WCAG 2.5.5 Target Size / Apple HIG & Material Design guidance',
+          norm: 'WCAG 2.5.5 Target Size',
+          references: [REFERENCES.wcagTargetSize, REFERENCES.nnTouchTargetSize],
           affectedElements: smallTargets,
         });
       }
@@ -101,6 +106,7 @@ export async function runResponsiveCheck(page, { screenshotDir, slug }) {
           description:
             'Body text smaller than ~12px is difficult to read on mobile devices and often triggers auto-zoom on iOS form inputs.',
           norm: 'Mobile typography best practice (16px+ recommended for body copy)',
+          references: [REFERENCES.webdevResponsive],
           affectedElements: smallFontCount,
         });
       }

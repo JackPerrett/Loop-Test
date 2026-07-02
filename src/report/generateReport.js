@@ -81,7 +81,13 @@ export function generateMarkdownReport({ url, generatedAt, meta, metrics, screen
       lines.push('');
       lines.push(`- **Norm/reference:** ${issue.norm}`);
       lines.push(`- **Affected elements:** ${issue.affectedElements ?? 'N/A'}`);
-      if (issue.helpUrl) lines.push(`- **More info:** ${issue.helpUrl}`);
+      if (issue.references?.length) {
+        for (const ref of issue.references) {
+          lines.push(`- **Source:** [${ref.title}](${ref.url})`);
+        }
+      } else if (issue.helpUrl) {
+        lines.push(`- **More info:** ${issue.helpUrl}`);
+      }
       if (issue.sample) lines.push(`- **Example:** \`${issue.sample.replace(/\n/g, ' ')}\``);
       lines.push('');
     }
