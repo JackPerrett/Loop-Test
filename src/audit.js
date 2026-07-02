@@ -25,6 +25,18 @@ function resolveChromiumExecutable() {
   return undefined;
 }
 
+function resolveProxyConfig() {
+  // Playwright's Chromium does not inherit HTTPS_PROXY/HTTP_PROXY from the
+  // shell the way curl or Node's own fetch do — it has to be handed to
+  // chromium.launch() explicitly, or navigation to any non-bypassed host
+  // fails outright in proxied sandboxes.
+  const server = process.env.HTTPS_PROXY || process.env.https_proxy
+    || process.env.HTTP_PROXY || process.env.http_proxy;
+  if (!server) return undefined;
+  const bypass = process.env.NO_PROXY || process.env.no_proxy;
+  return bypass ? { server, bypass } : { server };
+}
+
 async function renderPdf({ html, outputPath, hostname, executablePath }) {
   const browser = await chromium.launch({ headless: true, executablePath });
   const page = await browser.newPage();
@@ -133,13 +145,14 @@ export async function auditSite(startUrl, options = {}) {
   const maxPages = options.singlePage ? 1 : (options.maxPages || 15);
   const maxDepth = options.singlePage ? 0 : (options.maxDepth ?? 3);
   const executablePath = resolveChromiumExecutable();
+  const proxy = resolveProxyConfig();
   const siteSlug = slugify(startUrl) || 'site';
 
   fs.mkdirSync(outputDir, { recursive: true });
   const screenshotDir = path.join(outputDir, 'screenshots');
   fs.mkdirSync(screenshotDir, { recursive: true });
 
-  const browser = await chromium.launch({ headless: true, executablePath });
+  const browser = await chromium.launch({ headless: true, executablePath, proxy });
   const context = await browser.newContext({
     viewport: { width: VIEWPORTS[2].width, height: VIEWPORTS[2].height },
   });
